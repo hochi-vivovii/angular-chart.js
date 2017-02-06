@@ -1,3 +1,12 @@
+/*!
+ * angular-chart.js - An angular.js wrapper for Chart.js
+ * http://jtblin.github.io/angular-chart.js/
+ * Version: 1.1.1
+ *
+ * Copyright 2016 Jerome Touffe-Blin
+ * Released under the BSD-2-Clause license
+ * https://github.com/jtblin/angular-chart.js/blob/master/LICENSE
+ */
 (function (factory) {
   'use strict';
   if (typeof exports === 'object') {
@@ -43,7 +52,7 @@
 
   return angular.module('chart.js', [])
     .provider('ChartJs', ChartJsProvider)
-    .factory('ChartJsFactory', ['ChartJs', '$timeout', ChartJsFactory])
+    .factory('ChartJsFactory', ['ChartJs', '$interval', ChartJsFactory])
     .directive('chartBase', ['ChartJsFactory', function (ChartJsFactory) { return new ChartJsFactory(); }])
     .directive('chartLine', ['ChartJsFactory', function (ChartJsFactory) { return new ChartJsFactory('line'); }])
     .directive('chartBar', ['ChartJsFactory', function (ChartJsFactory) { return new ChartJsFactory('bar'); }])
@@ -95,7 +104,7 @@
     };
   }
 
-  function ChartJsFactory (ChartJs, $timeout) {
+  function ChartJsFactory (ChartJs, $interval) {
     return function chart (type) {
       return {
         restrict: 'CA',
@@ -166,25 +175,41 @@
     };
 
     function createChart (type, scope, elem) {
-      var options = getChartOptions(type, scope);
-      if (! hasData(scope) || ! canDisplay(type, scope, elem, options)) return;
+        // function canDisplay (type, scope, elem, options) {
+        //   // TODO: check parent?
+        //   if (options.responsive && elem[0].clientHeight === 0) {
+        //     $timeout(function () {
+        //       createChart(type, scope, elem);
+        //     }, 50, false);
+        //     return false;
+        //   }
+        //   return true;
+        // }
+      var itv = $interval(function(){
 
-      var cvs = elem[0];
-      var ctx = cvs.getContext('2d');
+        var options = getChartOptions(type, scope);
+        if (! hasData(scope)) return;
+        if (options.responsive && elem[0].clientHeight === 0) return;
+        // ! canDisplay(type, scope, elem, options)) return;
 
-      scope.chartGetColor = getChartColorFn(scope);
-      var data = getChartData(type, scope);
-      // Destroy old chart if it exists to avoid ghost charts issue
-      // https://github.com/jtblin/angular-chart.js/issues/187
-      destroyChart(scope);
+        var cvs = elem[0];
+        var ctx = cvs.getContext('2d');
 
-      scope.chart = new ChartJs.Chart(ctx, {
+        scope.chartGetColor = getChartColorFn(scope);
+        var data = getChartData(type, scope);
+        // Destroy old chart if it exists to avoid ghost charts issue
+        // https://github.com/jtblin/angular-chart.js/issues/187
+        destroyChart(scope);
+
+        scope.chart = new ChartJs.Chart(ctx, {
         type: type,
         data: data,
         options: options
-      });
-      scope.$emit('chart-create', scope.chart);
-      bindEvents(cvs, scope);
+        });
+        scope.$emit('chart-create', scope.chart);
+        bindEvents(cvs, scope);
+        $interval.cancel(itv);
+      }, 50);
     }
 
     function canUpdateChart (newVal, oldVal) {
@@ -369,17 +394,6 @@
       return ! value ||
         (Array.isArray(value) && ! value.length) ||
         (typeof value === 'object' && ! Object.keys(value).length);
-    }
-
-    function canDisplay (type, scope, elem, options) {
-      // TODO: check parent?
-      if (options.responsive && elem[0].clientHeight === 0) {
-        $timeout(function () {
-          createChart(type, scope, elem);
-        }, 50, false);
-        return false;
-      }
-      return true;
     }
 
     function destroyChart(scope) {

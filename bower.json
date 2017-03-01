@@ -40,6 +40,6 @@
   "dependencies": {
     "angular": "1.x",
     "chart.js": "2.x",
-    "chartjs-horizontal-waterfall": "https://github.com/hochi-vivovii/chartjs-horizontal-waterfall.git#0.1.0"
+    "chartjs-horizontal-waterfall": "https://github.com/hochi-vivovii/chartjs-horizontal-waterfall.git#0.1.1"
   }
 }
